@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { subscribeToMyListings, addListing, updateListing, deleteListing, subscribeToDonorOrders, updateOrderStatus, Order } from "@/lib/db";
 import { FoodListing, CATEGORIES } from "@/lib/seedData";
 import AccountSwitcherSheet from "@/components/AccountSwitcherSheet";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export default function DonorDashboard() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function DonorDashboard() {
   const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80"); // Mock image
   const [loading, setLoading] = useState(false);
   const [editListingId, setEditListingId] = useState<string | null>(null);
+  const [expiryHours, setExpiryHours] = useState("2");
 
   useEffect(() => {
     if (!user) return;
@@ -47,7 +49,7 @@ export default function DonorDashboard() {
 
     try {
       const now = Date.now();
-      const expiresAt = now + 4 * 3600000; // Default expire in 4 hours
+      const expiresAt = now + parseFloat(expiryHours) * 3600000;
       
       const listingData = {
         name,
@@ -79,6 +81,7 @@ export default function DonorDashboard() {
       setOriginalPrice("");
       setRescuePrice("");
       setQuantity("1");
+      setExpiryHours("2");
       setImageUrl("https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80");
       setEditListingId(null);
     } catch (err: any) {
@@ -100,6 +103,7 @@ export default function DonorDashboard() {
       setOriginalPrice("");
       setRescuePrice("");
       setQuantity("1");
+      setExpiryHours("2");
       setImageUrl("https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80");
       setEditListingId(null);
     } catch (err: any) {
@@ -287,15 +291,31 @@ export default function DonorDashboard() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", gap: 12 }}>
-                  <div className="elite-input-group" style={{ flex: 1 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr", gap: 12 }}>
+                  <div className="elite-input-group">
                     <label className="elite-input-label">Porsi (Qty)</label>
                     <input className="elite-input-field" type="number" value={quantity} onChange={e => setQuantity(e.target.value)} required min="1" />
                   </div>
-                  <div className="elite-input-group" style={{ flex: 1 }}>
+                  <div className="elite-input-group">
                     <label className="elite-input-label">Kategori</label>
                     <select className="elite-input-field" value={category} onChange={e => setCategory(e.target.value)}>
                       {CATEGORIES.filter(c => c !== "Semua").map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="elite-input-group">
+                    <label className="elite-input-label">Jual Selama</label>
+                    <select className="elite-input-field" value={expiryHours} onChange={e => setExpiryHours(e.target.value)}>
+                      {!["0.5", "1", "2", "3", "4", "6", "12", "24"].includes(expiryHours) && (
+                        <option value={expiryHours}>Sisa {expiryHours} Jam</option>
+                      )}
+                      <option value="0.5">30 Menit</option>
+                      <option value="1">1 Jam</option>
+                      <option value="2">2 Jam</option>
+                      <option value="3">3 Jam</option>
+                      <option value="4">4 Jam</option>
+                      <option value="6">6 Jam</option>
+                      <option value="12">12 Jam</option>
+                      <option value="24">24 Jam</option>
                     </select>
                   </div>
                 </div>
@@ -411,6 +431,9 @@ export default function DonorDashboard() {
                     setQuantity(l.quantity.toString());
                     setCategory(l.category);
                     setImageUrl(l.imageUrl);
+                    const remaining = l.expiresAt - Date.now();
+                    const hoursLeft = Math.max(0.5, Math.round((remaining / 3600000) * 10) / 10);
+                    setExpiryHours(hoursLeft.toString());
                     setShowForm(true);
                   }}
                   style={{ padding: 16, display: "flex", gap: 16, alignItems: "center", cursor: "pointer" }}
@@ -423,7 +446,10 @@ export default function DonorDashboard() {
                       <h4 className="t-sm c-ink" style={{ fontWeight: 700 }}>{l.name}</h4>
                       <span className="tag tag-green">{l.quantity} Porsi</span>
                     </div>
-                    <div className="t-xs c-muted" style={{ marginTop: 4 }}>Rp {l.rescuePrice.toLocaleString()} / porsi</div>
+                    <div className="flex justify-between items-center" style={{ marginTop: 8 }}>
+                      <span className="t-xs c-muted" style={{ fontSize: 11 }}>Rp {l.rescuePrice.toLocaleString()} / porsi</span>
+                      <CountdownTimer expiresAt={l.expiresAt} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -461,6 +487,7 @@ export default function DonorDashboard() {
             setRescuePrice("");
             setQuantity("1");
             setCategory(CATEGORIES[1]);
+            setExpiryHours("2");
             setImageUrl("https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80");
             setShowForm(true);
           }}

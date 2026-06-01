@@ -4,6 +4,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -259,17 +260,16 @@ export async function updateDeliveryStatus(
 
 export async function seedDatabase() {
   if (!db) return;
-  const q = query(collection(db, LISTINGS_COLLECTION));
-  const snapshot = await getDocs(q);
   
-  if (snapshot.empty) {
-    console.log("Database empty. Seeding...");
-    for (const listing of SEED_LISTINGS) {
-      await setDoc(doc(db, LISTINGS_COLLECTION, listing.id), listing);
+  // Clean up and delete any old mock listings (IDs "1" through "6") from Firestore
+  console.log("Cleaning up mock listings (IDs '1'-'6') from database...");
+  for (let i = 1; i <= 6; i++) {
+    const docRef = doc(db, LISTINGS_COLLECTION, String(i));
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      await deleteDoc(docRef);
+      console.log(`Deleted mock listing ID: ${i}`);
     }
-    console.log("Seeding complete!");
-  } else {
-    console.log("Database already has data. Skipping seed.");
   }
 }
 

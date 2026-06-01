@@ -2,9 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { addListing } from "@/lib/db";
 
 export default function CreateListingPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -27,12 +30,41 @@ export default function CreateListingPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) {
+      alert("Harap login terlebih dahulu!");
+      return;
+    }
     setSubmitting(true);
-    // Simulate save delay
-    await new Promise((r) => setTimeout(r, 1200));
-    setSubmitting(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/donor"), 2000);
+    try {
+      const now = Date.now();
+      const expiresAt = now + parseFloat(form.expiryHours) * 3600000;
+
+      const listingData = {
+        name: form.name,
+        description: form.description,
+        originalPrice: parseInt(form.originalPrice),
+        rescuePrice: parseInt(form.rescuePrice),
+        quantity: parseInt(form.quantity),
+        category: form.category,
+        donorName: user.displayName || "Mitra ResQ",
+        donorId: user.uid,
+        donorAddress: "Lokasi Anda saat ini", // Mock address
+        lat: -6.2088,
+        lng: 106.8456,
+        expiresAt,
+        imageUrl: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80", // Default image
+        isPickup: form.isPickup,
+        isDelivery: form.isDelivery
+      };
+
+      await addListing(listingData);
+      setSuccess(true);
+      setTimeout(() => router.push("/donor"), 2000);
+    } catch (err: any) {
+      alert("Gagal membuat listing: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const discountPct = form.originalPrice && form.rescuePrice
