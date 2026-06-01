@@ -101,6 +101,7 @@ export default function OrdersPage() {
             box-shadow: 0 8px 20px rgba(9,9,11,0.25);
             border: 3px solid #fff;
             z-index: 15;
+            motion-path: path('M 50 65 Q 120 65 150 110 T 260 145');
             offset-path: path('M 50 65 Q 120 65 150 110 T 260 145');
             animation: move-scooter 8s ease-in-out infinite alternate;
           }
@@ -216,7 +217,7 @@ export default function OrdersPage() {
 
                   {/* Dynamic Scooter (Animates smoothly along curved route path) */}
                   <div className="scooter-marker">
-                    <div style={{ width: 14, height: 14, background: "var(--c-brand)", borderRadius: "50%" }}></div>
+                    <span style={{ fontSize: 22, lineHeight: 1 }}>🛵</span>
                   </div>
 
                   {/* User Marker (Pulses with Apple-style blue ring) */}
