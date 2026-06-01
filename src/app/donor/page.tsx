@@ -355,51 +355,95 @@ export default function DonorDashboard() {
             </div>
           ) : (
             <div className="flex-col gap-4">
-              {incomingOrders.map(o => (
-                <div key={o.id} className="elite-card flex-col" style={{ padding: 16, gap: 12 }}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="t-xs c-muted">ORDER ID: #{o.id?.slice(0, 6).toUpperCase()}</span>
-                      <h4 className="t-sm c-ink" style={{ fontWeight: 800, marginTop: 2 }}>{o.foodName}</h4>
-                      <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 2 }}>{o.quantity} porsi • Rp {o.totalPrice.toLocaleString("id-ID")}</p>
-                    </div>
-                    <span className={`tag ${o.status === 'ready' ? 'tag-green' : 'tag-yellow'}`}>
-                      {o.status === 'ready' ? 'Siap Diambil' : 'Sedang Diproses'}
-                    </span>
-                  </div>
+              {incomingOrders.map(o => {
+                const getCourierStatusLabel = (delStatus?: string) => {
+                  switch (delStatus) {
+                    case "waiting_courier": return "Menunggu Kurir Terdekat...";
+                    case "en_route_pickup": return "Kurir Sedang Menuju Toko 🛵";
+                    case "picked_up": return "Makanan Sudah Diserahkan ke Kurir";
+                    case "en_route_dropoff": return "Kurir Sedang Mengantar ke Konsumen 🛵";
+                    case "delivered": return "Makanan Tiba di Tujuan ✅";
+                    default: return "Menunggu Kurir...";
+                  }
+                };
 
-                  <div className="flex gap-2" style={{ marginTop: 4 }}>
-                    {o.status === "active" && (
-                      <button
-                        onClick={() => handleUpdateStatus(o.id!, "ready")}
-                        className="elite-btn-primary"
-                        style={{ padding: "8px 16px", fontSize: 12, flex: 1, height: "auto" }}
-                      >
-                        Tandai Siap Diambil 
-                      </button>
+                return (
+                  <div key={o.id} className="elite-card flex-col" style={{ padding: 16, gap: 12 }}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="t-xs c-muted">ORDER ID: #{o.id?.slice(0, 6).toUpperCase()}</span>
+                          <span className={`tag ${o.isDelivery ? 'tag-brand' : 'tag-green'}`} style={{ fontSize: 9, padding: "2px 6px" }}>
+                            {o.isDelivery ? 'Delivery' : 'Pickup'}
+                          </span>
+                        </div>
+                        <h4 className="t-sm c-ink" style={{ fontWeight: 800, marginTop: 4 }}>{o.foodName}</h4>
+                        <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 2 }}>{o.quantity} porsi • Rp {o.totalPrice.toLocaleString("id-ID")}</p>
+                      </div>
+                      <span className={`tag ${o.status === 'ready' ? 'tag-green' : 'tag-yellow'}`}>
+                        {o.status === 'ready' ? 'Siap Diambil' : 'Sedang Diproses'}
+                      </span>
+                    </div>
+
+                    {o.isDelivery && (
+                      <div style={{ 
+                        background: "var(--c-faint)", 
+                        padding: "10px 14px", 
+                        borderRadius: "var(--radius-md)", 
+                        border: "1px solid var(--c-border)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: "var(--c-ink)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8
+                      }}>
+                        <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: o.deliveryStatus === 'waiting_courier' ? '#EAB308' : '#10B981', animation: o.deliveryStatus !== 'delivered' ? 'pulse-dot 2s infinite ease-in-out' : 'none' }}></span>
+                        {getCourierStatusLabel(o.deliveryStatus)}
+                      </div>
                     )}
-                    {o.status === "ready" && (
+
+                    <div className="flex gap-2" style={{ marginTop: 4 }}>
+                      {o.status === "active" && (
+                        <button
+                          onClick={() => handleUpdateStatus(o.id!, "ready")}
+                          className="elite-btn-primary"
+                          style={{ padding: "8px 16px", fontSize: 12, flex: 1, height: "auto" }}
+                        >
+                          Tandai Siap Diambil 
+                        </button>
+                      )}
+                      
+                      {o.status === "ready" && !o.isDelivery && (
+                        <button
+                          onClick={() => handleUpdateStatus(o.id!, "completed")}
+                          className="elite-btn-primary"
+                          style={{ padding: "8px 16px", fontSize: 12, flex: 1, height: "auto", background: "#10B981" }}
+                        >
+                          Konfirmasi Diambil 
+                        </button>
+                      )}
+
+                      {o.status === "ready" && o.isDelivery && (
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--c-muted)", background: "var(--c-surface)", border: "1px dashed var(--c-border)", borderRadius: "var(--radius-pill)", padding: "6px 12px" }}>
+                          ⌛ Kurir yang akan menyelesaikan pengantaran
+                        </div>
+                      )}
+                      
                       <button
-                        onClick={() => handleUpdateStatus(o.id!, "completed")}
-                        className="elite-btn-primary"
-                        style={{ padding: "8px 16px", fontSize: 12, flex: 1, height: "auto", background: "#10B981" }}
+                        onClick={() => handleUpdateStatus(o.id!, "cancelled")}
+                        style={{
+                          padding: "8px 12px", borderRadius: "var(--radius-pill)",
+                          background: "var(--c-faint)", color: "#EF4444", fontSize: 12,
+                          border: "1px solid var(--c-border)", cursor: "pointer", fontWeight: 700
+                        }}
                       >
-                        Konfirmasi Diambil 
+                        Batal
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleUpdateStatus(o.id!, "cancelled")}
-                      style={{
-                        padding: "8px 12px", borderRadius: "var(--radius-pill)",
-                        background: "var(--c-faint)", color: "#EF4444", fontSize: 12,
-                        border: "1px solid var(--c-border)", cursor: "pointer", fontWeight: 700
-                      }}
-                    >
-                      Batal
-                    </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

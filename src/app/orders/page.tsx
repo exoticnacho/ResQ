@@ -468,7 +468,21 @@ export default function OrdersPage() {
 
               {/* Action buttons */}
               <div className="flex-col gap-3" style={{ marginTop: 8 }}>
-                {selectedOrder.status === "active" && (
+                {(selectedOrder.status === "active" || selectedOrder.status === "ready") && selectedOrder.isDelivery && (
+                  <div style={{ 
+                    textAlign: "center", 
+                    padding: "14px 20px", 
+                    fontSize: 13, 
+                    fontWeight: 700, 
+                    color: "var(--c-brand)",
+                    background: "var(--c-brand-faint)",
+                    borderRadius: "var(--radius-lg)",
+                    border: "1px solid rgba(217, 101, 75, 0.2)"
+                  }}>
+                    🛵 Kurir sedang mengantar makanan Anda. Pesanan akan otomatis diselesaikan setelah tiba!
+                  </div>
+                )}
+                {(selectedOrder.status === "active" || selectedOrder.status === "ready") && !selectedOrder.isDelivery && (
                   <button
                     onClick={() => handleCompleteOrder(selectedOrder.id!)}
                     disabled={completing}

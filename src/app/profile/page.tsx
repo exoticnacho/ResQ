@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAccountMode } from "@/context/AccountModeContext";
 import AccountSwitcherSheet from "@/components/AccountSwitcherSheet";
 import { updateProfile } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -100,10 +102,26 @@ export default function ProfilePage() {
     if (!user || !editName.trim()) return;
     setUpdatingProfile(true);
     try {
+      const finalPhotoUrl = editPhotoUrl.trim() || "";
+      
+      // 1. Update Firebase Auth
       await updateProfile(user, {
         displayName: editName.trim(),
-        photoURL: editPhotoUrl.trim() || null
+        photoURL: finalPhotoUrl || null
       });
+
+      // 2. Update Firestore users collection
+      if (db) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+          name: editName.trim(),
+          photoURL: finalPhotoUrl
+        });
+      }
+
+      // 3. Reload Auth User session locally
+      await user.reload();
+
       router.refresh();
       setActiveModal(null);
       triggerToast("Profil berhasil diperbarui!");
@@ -223,7 +241,9 @@ export default function ProfilePage() {
             display: "flex", alignItems: "center", justifyContent: "center",
             position: "relative"
           }}>
-            {user?.photoURL ? (
+            {profile?.photoURL ? (
+              <img src={profile.photoURL} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+            ) : user?.photoURL ? (
               <img src={user.photoURL} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               <div style={{
@@ -232,7 +252,7 @@ export default function ProfilePage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 color: "#fff", fontSize: 36, fontWeight: 800
               }}>
-                {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+                {(profile?.name || user?.displayName || user?.email || "U").charAt(0).toUpperCase()}
               </div>
             )}
             
@@ -260,7 +280,7 @@ export default function ProfilePage() {
           </div>
           
           <h1 className="t-h1 c-ink" style={{ fontSize: 26, letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: 6 }}>
-            {user?.displayName || "Pengguna ResQ"}
+            {profile?.name || user?.displayName || "Pengguna ResQ"}
           </h1>
           <p className="t-body c-muted" style={{ marginTop: 2, fontSize: 14 }}>
             {user?.email || "Email tidak tersedia"}
@@ -641,6 +661,90 @@ export default function ProfilePage() {
               {/* 1. EDIT PROFILE MODAL */}
               {activeModal === "edit-profile" && (
                 <form onSubmit={handleUpdateProfile} className="flex-col gap-4">
+                  {/* File Upload / Interactive Preview Area */}
+                  <div className="flex-col gap-2">
+                    <label className="t-xs c-muted" style={{ fontWeight: 700 }}>FOTO PROFIL</label>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 6 }}>
+                      <div style={{
+                        width: 72, height: 72, borderRadius: "50%",
+                        border: "2.5px solid var(--c-border)", overflow: "hidden", background: "var(--c-surface)",
+                        boxShadow: "var(--sh-md)", flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center"
+                      }}>
+                        {editPhotoUrl ? (
+                          <img src={editPhotoUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <div style={{
+                            width: "100%", height: "100%",
+                            background: "linear-gradient(135deg, var(--c-brand), var(--c-accent))",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: "#fff", fontSize: 24, fontWeight: 800
+                          }}>
+                            {editName.charAt(0).toUpperCase() || "U"}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div style={{ flex: 1 }}>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          id="profile-photo-file-upload" 
+                          style={{ display: "none" }} 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                triggerToast("Ukuran foto maksimal 2MB!");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                if (typeof reader.result === "string") {
+                                  setEditPhotoUrl(reader.result);
+                                  triggerToast("Foto profil terpilih!");
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <label 
+                            htmlFor="profile-photo-file-upload" 
+                            className="elite-icon-btn" 
+                            style={{ 
+                              width: "auto", display: "inline-flex", padding: "8px 16px", 
+                              height: "auto", borderRadius: "var(--radius-pill)", fontSize: 13, 
+                              fontWeight: 700, cursor: "pointer", background: "var(--c-surface)",
+                              border: "1px solid var(--c-border)",
+                              boxShadow: "var(--sh-sm)"
+                            }}
+                          >
+                             Unggah Foto
+                          </label>
+                          {editPhotoUrl && (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setEditPhotoUrl("");
+                                triggerToast("Foto profil dihapus.");
+                              }}
+                              style={{
+                                padding: "8px 16px", borderRadius: "var(--radius-pill)",
+                                background: "var(--c-faint)", color: "#EF4444", fontSize: 13,
+                                border: "1px solid var(--c-border)", cursor: "pointer", fontWeight: 700
+                              }}
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </div>
+                        <p className="t-xs c-muted" style={{ marginTop: 4, textTransform: "none", fontSize: 11 }}>Maks 2MB. JPG atau PNG.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex-col gap-2">
                     <label className="t-xs c-muted" style={{ fontWeight: 700 }}>NAMA LENGKAP</label>
                     <input 
@@ -655,23 +759,24 @@ export default function ProfilePage() {
                       required
                     />
                   </div>
+
                   <div className="flex-col gap-2">
                     <label className="t-xs c-muted" style={{ fontWeight: 700 }}>FOTO PROFIL (URL)</label>
                     <input 
                       type="url" 
-                      value={editPhotoUrl}
+                      value={editPhotoUrl.startsWith("data:") ? "" : editPhotoUrl}
                       onChange={e => setEditPhotoUrl(e.target.value)}
                       style={{
                         padding: 12, borderRadius: 12, border: "1.5px solid var(--c-border)",
                         background: "var(--c-bg)", color: "var(--c-ink)", outline: "none", fontSize: 14
                       }}
-                      placeholder="Masukkan link gambar / foto"
+                      placeholder={editPhotoUrl.startsWith("data:") ? "Foto diunggah dari lokal" : "Masukkan link gambar / foto"}
                     />
                   </div>
 
                   {/* Clean Geometric presets instead of AI-looking emojis */}
-                  <div className="flex-col gap-2" style={{ marginTop: 8 }}>
-                    <label className="t-xs c-muted" style={{ fontWeight: 700 }}>PILIH PRESET AVATAR GRADASI</label>
+                  <div className="flex-col gap-2" style={{ marginTop: 4 }}>
+                    <label className="t-xs c-muted" style={{ fontWeight: 700 }}>ATAU PILIH PRESET GRADASI</label>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginTop: 4 }}>
                       {avatarGradientPresets.map((preset, idx) => (
                         <button
@@ -680,6 +785,7 @@ export default function ProfilePage() {
                           onClick={() => {
                             const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g_${idx}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${idx === 0 ? '#0ea5e9' : idx === 1 ? '#F59E0B' : idx === 2 ? '#8B5CF6' : '#10B981'}"/><stop offset="100%" stop-color="${idx === 0 ? '#10B981' : idx === 1 ? '#EF4444' : idx === 2 ? '#EC4899' : '#064E3B'}"/></linearGradient></defs><rect width="100" height="100" fill="url(%23g_${idx})"/><text y="62" x="50" font-size="36" fill="%23ffffff" font-weight="bold" font-family="sans-serif" text-anchor="middle">${editName.charAt(0).toUpperCase() || 'U'}</text></svg>`;
                             setEditPhotoUrl(`data:image/svg+xml;utf8,${svgStr}`);
+                            triggerToast("Preset terpilih!");
                           }}
                           style={{
                             height: 48,

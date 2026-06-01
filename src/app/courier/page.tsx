@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Order, subscribeToAvailableDeliveries, subscribeToMyDeliveries, updateDeliveryStatus } from "@/lib/db";
+import { Order, subscribeToAvailableDeliveries, subscribeToMyDeliveries, updateDeliveryStatus, takeDeliveryOrder, cancelDeliveryOrder } from "@/lib/db";
 
 export default function CourierDashboard() {
   const { user } = useAuth();
@@ -43,9 +43,20 @@ export default function CourierDashboard() {
   const handleTakeOrder = async (orderId: string) => {
     if (!user) return;
     try {
-      await updateDeliveryStatus(orderId, "en_route_pickup", user.uid);
+      await takeDeliveryOrder(orderId, user.uid);
     } catch (e: any) {
       alert("Gagal mengambil pesanan: " + e.message);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!user) return;
+    if (confirm("Apakah Anda yakin ingin membatalkan pesanan ini? Pesanan akan dikembalikan ke daftar pencarian kurir.")) {
+      try {
+        await cancelDeliveryOrder(orderId, user.uid);
+      } catch (e: any) {
+        alert("Gagal membatalkan pesanan: " + e.message);
+      }
     }
   };
 
@@ -108,42 +119,42 @@ export default function CourierDashboard() {
             <div 
               onClick={() => setIsOnline(!isOnline)}
               style={{
-                width: 60, height: 32, borderRadius: 16,
+                width: 64, height: 34, borderRadius: 34,
                 background: isOnline ? "var(--c-brand)" : "var(--c-border)",
-                position: "relative", cursor: "pointer", transition: "all 0.3s ease",
-                boxShadow: isOnline ? "0 4px 12px rgba(14,165,233,0.3)" : "none"
+                position: "relative", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow: isOnline ? "0 4px 14px rgba(217,101,75,0.4)" : "inset 0 2px 4px rgba(0,0,0,0.05)"
               }}
             >
               <div style={{
-                width: 26, height: 26, borderRadius: "50%", background: "#fff",
-                position: "absolute", top: 3, left: isOnline ? 31 : 3,
-                transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-                boxShadow: "0 2px 5px rgba(0,0,0,0.2)"
+                width: 28, height: 28, borderRadius: "50%", background: "#fff",
+                position: "absolute", top: 3, left: isOnline ? 33 : 3,
+                transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
               }} />
             </div>
           </div>
 
           {/* Earnings Card */}
-          <div className="elite-card" style={{ 
-            background: "linear-gradient(135deg, rgba(139,92,246,0.05), rgba(139,92,246,0.15))",
-            border: "1.5px solid rgba(139,92,246,0.2)",
-            padding: 20, 
+          <div className="elite-glass" style={{ 
+            padding: 24, 
             display: "flex", 
             justifyContent: "space-between", 
-            alignItems: "center" 
+            alignItems: "center",
+            borderRadius: "var(--radius-xl)"
           }}>
             <div>
-              <div className="t-xs" style={{ color: "#8B5CF6", fontWeight: 700, letterSpacing: "0.5px" }}>PENDAPATAN HARI INI</div>
-              <div style={{ fontSize: 26, fontWeight: 800, color: "var(--c-ink)", marginTop: 2 }}>
+              <div className="t-xs" style={{ color: "var(--c-brand)", fontWeight: 800, letterSpacing: "1px" }}>PENDAPATAN HARI INI</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: "var(--c-ink)", marginTop: 4, letterSpacing: "-0.5px" }}>
                 Rp {todayEarnings.toLocaleString('id-ID')}
               </div>
             </div>
             <div style={{
-              width: 48, height: 48, borderRadius: 16, background: "rgba(139,92,246,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center"
+              width: 56, height: 56, borderRadius: 20, background: "var(--c-brand-faint)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "inset 0 2px 8px rgba(255,255,255,0.6)"
             }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="3" ry="3"/>
                 <line x1="2" y1="10" x2="22" y2="10"/>
               </svg>
             </div>
@@ -168,42 +179,49 @@ export default function CourierDashboard() {
         ) : activeJob && activeJob.id ? (
           <div className="fade-up">
             <h3 className="t-h3 c-ink" style={{ marginBottom: 16 }}>Status Pengantaran</h3>
-            <div className="elite-card" style={{ padding: 20, border: "2px solid var(--c-brand)" }}>
+            <div className="elite-card" style={{ padding: 24, border: "2px solid var(--c-brand)", boxShadow: "0 12px 32px rgba(217,101,75,0.15)" }}>
               
-              <div style={{ position: "relative", marginLeft: 12 }}>
-                <div style={{ position: "absolute", top: 12, bottom: 20, left: 11, width: 2, background: "var(--c-border)", zIndex: 0 }} />
-                <div style={{ position: "absolute", top: 12, left: 11, width: 2, background: "var(--c-brand)", zIndex: 1, 
-                  height: activeJob.deliveryStatus === 'en_route_pickup' ? '10%' : activeJob.deliveryStatus === 'picked_up' ? '50%' : '100%', 
-                  transition: "height 0.5s ease" }} />
+              <div style={{ position: "relative", marginLeft: 16 }}>
+                {/* Tracker Track Background */}
+                <div style={{ position: "absolute", top: 14, bottom: 20, left: 13, width: 3, background: "var(--c-border)", borderRadius: 4, zIndex: 0 }} />
+                {/* Tracker Track Foreground (Dynamic) */}
+                <div style={{ position: "absolute", top: 14, left: 13, width: 3, background: "var(--c-brand)", borderRadius: 4, zIndex: 1, 
+                  height: activeJob.deliveryStatus === 'en_route_pickup' ? '15%' : activeJob.deliveryStatus === 'picked_up' ? '50%' : '100%', 
+                  transition: "height 0.6s cubic-bezier(0.16, 1, 0.3, 1)" }} />
 
                 {/* Step 1: Menuju Restoran */}
-                <div style={{ display: "flex", gap: 16, marginBottom: 24, position: "relative", zIndex: 2 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--c-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <div style={{ display: "flex", gap: 20, marginBottom: 32, position: "relative", zIndex: 2 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--c-brand)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 0 6px var(--c-surface)" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </div>
-                  <div>
-                    <h4 className="t-sm c-ink" style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>Menuju Restoran</h4>
-                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 2, fontSize: 12 }}>Jemput {activeJob.quantity}x {activeJob.foodName} di {activeJob.donorName}</p>
+                  <div style={{ width: "100%", marginTop: 2 }}>
+                    <h4 className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16, margin: 0 }}>Menuju Restoran</h4>
+                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 4, fontSize: 13 }}>Jemput {activeJob.quantity}x {activeJob.foodName} di <strong className="c-ink">{activeJob.donorName}</strong></p>
                     {activeJob.deliveryStatus === "en_route_pickup" && (
-                      <button onClick={() => handleUpdateStatus(activeJob.id!, "picked_up")} className="elite-btn-primary" style={{ width: "100%", marginTop: 12, padding: "10px" }}>
-                        Tiba di Restoran
-                      </button>
+                      <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
+                        <button onClick={() => handleCancelOrder(activeJob.id!)} className="elite-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, background: "var(--c-surface)", color: "#EF4444", border: "1px solid var(--c-border)", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: 700 }}>
+                          Batal
+                        </button>
+                        <button onClick={() => handleUpdateStatus(activeJob.id!, "picked_up")} className="elite-btn-primary" style={{ flex: 2, padding: "12px", fontSize: 14, boxShadow: "0 8px 16px rgba(217,101,75,0.2)" }}>
+                          Konfirmasi Tiba
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Step 2: Pesanan Diambil */}
-                <div style={{ display: "flex", gap: 16, marginBottom: 24, position: "relative", zIndex: 2 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "var(--c-brand)" : "var(--c-surface)", color: "#fff", border: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "none" : "2px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 20, marginBottom: 32, position: "relative", zIndex: 2 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "var(--c-brand)" : "var(--c-surface)", color: "#fff", border: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "none" : "3px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 0 6px var(--c-surface)", transition: "all 0.3s" }}>
                     {(activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     )}
                   </div>
-                  <div style={{ opacity: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? 1 : 0.5 }}>
-                    <h4 className="t-sm c-ink" style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>Pesanan Diambil</h4>
-                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 2, fontSize: 12 }}>Pastikan pesanan sesuai.</p>
+                  <div style={{ opacity: (activeJob.deliveryStatus === 'picked_up' || activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? 1 : 0.4, transition: "opacity 0.3s", width: "100%", marginTop: 2 }}>
+                    <h4 className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16, margin: 0 }}>Pesanan Diambil</h4>
+                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 4, fontSize: 13 }}>Pastikan pesanan sesuai sebelum berangkat.</p>
                     {activeJob.deliveryStatus === "picked_up" && (
-                      <button onClick={() => handleUpdateStatus(activeJob.id!, "en_route_dropoff")} className="elite-btn-primary" style={{ width: "100%", marginTop: 12, padding: "10px" }}>
+                      <button onClick={() => handleUpdateStatus(activeJob.id!, "en_route_dropoff")} className="elite-btn-primary" style={{ width: "100%", marginTop: 14, padding: "12px", fontSize: 14, boxShadow: "0 8px 16px rgba(217,101,75,0.2)" }}>
                         Mulai Pengantaran
                       </button>
                     )}
@@ -211,21 +229,21 @@ export default function CourierDashboard() {
                 </div>
 
                 {/* Step 3: Menuju Lokasi Pengantaran */}
-                <div style={{ display: "flex", gap: 16, position: "relative", zIndex: 2 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "var(--c-brand)" : "var(--c-surface)", color: "#fff", border: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "none" : "2px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 20, position: "relative", zIndex: 2 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "var(--c-brand)" : "var(--c-surface)", color: "#fff", border: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? "none" : "3px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 0 6px var(--c-surface)", transition: "all 0.3s" }}>
                     {(activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     )}
                   </div>
-                  <div style={{ opacity: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? 1 : 0.5, width: "100%" }}>
-                    <h4 className="t-sm c-ink" style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>Menuju Lokasi</h4>
-                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 2, fontSize: 12 }}>Antar ke lokasi berjarak {activeJob.dropoffDistance} km.</p>
+                  <div style={{ opacity: (activeJob.deliveryStatus === 'en_route_dropoff' || activeJob.deliveryStatus === 'delivered') ? 1 : 0.4, transition: "opacity 0.3s", width: "100%", marginTop: 2 }}>
+                    <h4 className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16, margin: 0 }}>Menuju Lokasi</h4>
+                    <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 4, fontSize: 13 }}>Antar ke lokasi pelanggan berjarak {activeJob.dropoffDistance} km.</p>
                     {activeJob.deliveryStatus === "en_route_dropoff" && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                        <button onClick={() => setIsChatOpen(true)} className="elite-btn-primary" style={{ flex: 1, padding: "10px", background: "var(--c-ink)", color: "#fff" }}>
-                          Chat
+                      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                        <button onClick={() => setIsChatOpen(true)} className="elite-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--c-surface)", color: "var(--c-ink)" }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat
                         </button>
-                        <button onClick={() => setIsPhotoModalOpen(true)} className="elite-btn-primary" style={{ flex: 2, padding: "10px" }}>
+                        <button onClick={() => setIsPhotoModalOpen(true)} className="elite-btn-primary" style={{ flex: 2, padding: "12px", fontSize: 14, boxShadow: "0 8px 16px rgba(217,101,75,0.2)" }}>
                           Selesaikan
                         </button>
                       </div>
@@ -243,29 +261,35 @@ export default function CourierDashboard() {
             ) : (
               <div className="flex-col gap-4">
                 {availableJobs.map(job => (
-                  <div key={job.id} className="elite-card flex-col" style={{ padding: 16, gap: 12 }}>
+                  <div key={job.id} className="elite-card flex-col" style={{ padding: 20, gap: 16 }}>
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="t-sm c-ink" style={{ fontWeight: 800 }}>{job.donorName}</div>
-                        <div className="t-xs c-muted">{job.quantity}x {job.foodName}</div>
+                        <div className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16 }}>{job.donorName}</div>
+                        <div className="t-xs c-muted" style={{ marginTop: 2 }}>{job.quantity}x {job.foodName}</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <div className="t-sm" style={{ color: "#10B981", fontWeight: 800 }}>
+                        <div className="t-sm" style={{ color: "#10B981", fontWeight: 800, fontSize: 16 }}>
                           Rp {(job.deliveryFee || 15000).toLocaleString('id-ID')}
                         </div>
-                        <div className="t-xs c-muted">Pendapatan</div>
+                        <div className="t-xs c-muted" style={{ marginTop: 2 }}>Pendapatan</div>
                       </div>
                     </div>
                     
-                    <div style={{ background: "var(--c-surface)", padding: 12, borderRadius: 12, display: "flex", gap: 12 }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-brand)" }} />
-                        <div style={{ width: 2, height: 20, background: "var(--c-border)" }} />
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
+                    <div style={{ background: "var(--cream-card)", border: "1px solid var(--cream-dark)", padding: "14px 16px", borderRadius: "var(--radius-lg)", display: "flex", gap: 16 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 4, paddingBottom: 4 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", border: "2.5px solid var(--c-brand)", background: "var(--cream-card)" }} />
+                        <div style={{ width: 2, flex: 1, background: "var(--c-border)", margin: "4px 0" }} />
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#10B981" }} />
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
-                        <div className="t-xs c-ink"><strong>Jemput:</strong> {job.pickupDistance || 1.2} km</div>
-                        <div className="t-xs c-ink"><strong>Antar Pembeli:</strong> {job.dropoffDistance || 3.5} km</div>
+                      <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1, gap: 12 }}>
+                        <div>
+                          <div className="t-xs c-muted" style={{ fontSize: 11, marginBottom: 2 }}>JEMPUT</div>
+                          <div className="t-sm c-ink" style={{ fontWeight: 700 }}>{job.pickupDistance || 1.2} km</div>
+                        </div>
+                        <div>
+                          <div className="t-xs c-muted" style={{ fontSize: 11, marginBottom: 2 }}>ANTAR KONSUMEN</div>
+                          <div className="t-sm c-ink" style={{ fontWeight: 700 }}>{job.dropoffDistance || 3.5} km</div>
+                        </div>
                       </div>
                     </div>
 
@@ -289,27 +313,32 @@ export default function CourierDashboard() {
       ──────────────────────────────────────────────────────── */}
       {isPhotoModalOpen && activeJob && (
         <div style={{
-          position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.6)",
-          display: "flex", alignItems: "flex-end", backdropFilter: "blur(4px)"
+          position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "flex-end", backdropFilter: "blur(6px)",
+          transition: "opacity 0.3s"
         }}>
           <div style={{
-            background: "var(--c-surface)", width: "100%", padding: "24px 24px 40px",
-            borderRadius: "32px 32px 0 0", animation: "fade-up 0.3s var(--ease-spring)"
+            background: "var(--c-bg)", width: "100%", padding: "24px 24px 40px",
+            borderRadius: "40px 40px 0 0", animation: "fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+            boxShadow: "0 -10px 40px rgba(0,0,0,0.1)"
           }}>
-            <h2 className="t-h2 c-ink" style={{ fontSize: 20, marginBottom: 8 }}>Bukti Pengantaran</h2>
-            <p className="t-sm c-muted" style={{ marginBottom: 24, textTransform: "none" }}>Ambil foto makanan di lokasi tujuan sebagai bukti.</p>
+            <div style={{ width: 48, height: 5, background: "var(--c-border)", borderRadius: 99, margin: "0 auto", marginBottom: 24 }} />
+            <h2 className="t-h2 c-ink" style={{ fontSize: 22, marginBottom: 8 }}>Bukti Pengantaran</h2>
+            <p className="t-sm c-muted" style={{ marginBottom: 24, textTransform: "none" }}>Ambil foto makanan di lokasi tujuan sebagai bukti konfirmasi pengantaran.</p>
             
             <div style={{
-              width: "100%", height: 200, background: "var(--c-faint)", borderRadius: 16,
-              border: "2px dashed var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center",
-              flexDirection: "column", gap: 12, marginBottom: 24, cursor: "pointer", transition: "all 0.2s"
+              width: "100%", height: 220, background: "var(--cream-card)", borderRadius: "var(--radius-xl)",
+              border: "2px dashed rgba(217,101,75,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
+              flexDirection: "column", gap: 14, marginBottom: 32, cursor: "pointer", transition: "all 0.2s"
             }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <span className="t-sm c-brand" style={{ fontWeight: 700 }}>Ketuk untuk Kamera</span>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--c-brand-faint)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <span className="t-sm c-brand" style={{ fontWeight: 800 }}>Ketuk untuk Buka Kamera</span>
             </div>
 
             <button 
-              className="elite-btn-primary" style={{ width: "100%", display: "flex", justifyContent: "center" }}
+              className="elite-btn-primary" style={{ width: "100%", padding: "16px", fontSize: 16, display: "flex", justifyContent: "center", boxShadow: "0 10px 25px rgba(217,101,75,0.25)" }}
               disabled={isUploading}
               onClick={() => {
                 setIsUploading(true);
@@ -321,13 +350,13 @@ export default function CourierDashboard() {
                 }, 1500);
               }}
             >
-              {isUploading ? "Mengunggah..." : "Unggah & Selesaikan"}
+              {isUploading ? "Mengunggah Bukti..." : "Unggah & Selesaikan"}
             </button>
             <button 
               onClick={() => setIsPhotoModalOpen(false)}
-              style={{ width: "100%", padding: 16, marginTop: 12, background: "transparent", border: "none", color: "var(--c-muted)", fontWeight: 700, cursor: "pointer" }}
+              style={{ width: "100%", padding: 16, marginTop: 12, background: "transparent", border: "none", color: "var(--c-muted)", fontWeight: 800, cursor: "pointer" }}
             >
-              Batal
+              Batalkan
             </button>
           </div>
         </div>
@@ -344,24 +373,24 @@ export default function CourierDashboard() {
           className={`sheet-panel ${isChatOpen ? "open" : ""}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ width: 40, height: 4, background: "var(--c-border)", borderRadius: 99, margin: "0 auto", marginTop: -16, marginBottom: 16 }} />
+          <div style={{ width: 48, height: 5, background: "var(--c-border)", borderRadius: 99, margin: "0 auto", marginTop: -16, marginBottom: 24 }} />
           
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="t-h2 c-ink" style={{ fontSize: 20 }}>Chat dengan Pemesan</h2>
-            <button onClick={() => setIsChatOpen(false)} style={{ background: "none", border: "none", color: "var(--c-muted)", cursor: "pointer", display: "flex" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="t-h2 c-ink" style={{ fontSize: 22 }}>Chat Pemesan</h2>
+            <button onClick={() => setIsChatOpen(false)} style={{ background: "var(--c-surface)", border: "none", color: "var(--c-ink)", cursor: "pointer", display: "flex", width: 36, height: 36, borderRadius: "50%", alignItems: "center", justifyContent: "center" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
-          <div style={{ background: "var(--c-surface)", padding: 16, borderRadius: "var(--radius-lg)", minHeight: 180, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", padding: 20, borderRadius: "var(--radius-xl)", minHeight: 220, display: "flex", flexDirection: "column", gap: 12 }}>
              {/* Simulated chat messages */}
-             <div style={{ alignSelf: "flex-end", background: "var(--c-brand-faint)", color: "var(--c-brand)", padding: "10px 14px", borderRadius: "16px 16px 4px 16px", fontSize: 14 }}>
-               Siap, mohon ditunggu!
+             <div style={{ alignSelf: "flex-end", background: "var(--c-brand)", color: "#fff", padding: "12px 16px", borderRadius: "20px 20px 4px 20px", fontSize: 14, boxShadow: "0 4px 12px rgba(217,101,75,0.15)" }}>
+               Siap, pesanan sedang saya antar ya! Mohon ditunggu.
              </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, margin: "0 -24px", paddingLeft: 24, paddingRight: 24 }} className="scroll-area mt-4">
-            {["Saya sudah di lokasi", "Sesuai titik koordinat ya", "Mohon angkat telepon"].map(msg => (
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12, margin: "0 -24px", paddingLeft: 24, paddingRight: 24 }} className="scroll-area mt-5">
+            {["Saya sudah di lokasi", "Sesuai titik peta ya", "Mohon angkat telepon"].map(msg => (
               <button 
                 key={msg}
                 onClick={() => {
@@ -369,10 +398,11 @@ export default function CourierDashboard() {
                    setIsChatOpen(false);
                 }}
                 style={{ 
-                  flexShrink: 0, padding: "8px 16px", borderRadius: 99, 
-                  background: "var(--c-faint)", color: "var(--c-ink)", 
-                  border: "1px solid var(--c-border)", fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", transition: "all 0.2s"
+                  flexShrink: 0, padding: "10px 20px", borderRadius: 99, 
+                  background: "var(--cream-card)", color: "var(--c-ink)", 
+                  border: "1.5px solid var(--c-border)", fontSize: 14, fontWeight: 700,
+                  cursor: "pointer", transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
                 }}
               >
                 {msg}

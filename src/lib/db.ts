@@ -203,15 +203,19 @@ export function subscribeToUserOrders(userId: string, callback: (orders: Order[]
 
 export function subscribeToAvailableDeliveries(callback: (orders: Order[]) => void) {
   if (!db) { callback([]); return () => {}; }
+  // Only query by one field to avoid needing a composite index.
   const q = query(
     collection(db, ORDERS_COLLECTION),
-    where("isDelivery", "==", true),
-    where("deliveryStatus", "==", "waiting_courier")
+    where("isDelivery", "==", true)
   );
   return onSnapshot(q, (snapshot) => {
     const orders: Order[] = [];
     snapshot.forEach((doc) => {
-      orders.push({ id: doc.id, ...doc.data() } as Order);
+      const data = doc.data() as Order;
+      // Filter out completed/cancelled/taken orders locally
+      if (data.deliveryStatus === "waiting_courier" && (data.status === "active" || data.status === "ready")) {
+        orders.push({ id: doc.id, ...data });
+      }
     });
     // Sort logic
     orders.sort((a, b) => {
@@ -225,15 +229,19 @@ export function subscribeToAvailableDeliveries(callback: (orders: Order[]) => vo
 
 export function subscribeToMyDeliveries(courierId: string, callback: (orders: Order[]) => void) {
   if (!db) { callback([]); return () => {}; }
+  // Query only by courierId to avoid composite index error
   const q = query(
     collection(db, ORDERS_COLLECTION),
-    where("courierId", "==", courierId),
-    where("status", "==", "active")
+    where("courierId", "==", courierId)
   );
   return onSnapshot(q, (snapshot) => {
     const orders: Order[] = [];
     snapshot.forEach((doc) => {
-      orders.push({ id: doc.id, ...doc.data() } as Order);
+      const data = doc.data() as Order;
+      // Filter active deliveries locally
+      if (data.status === "active" || data.status === "ready") {
+        orders.push({ id: doc.id, ...data });
+      }
     });
     callback(orders);
   });
@@ -256,6 +264,56 @@ export async function updateDeliveryStatus(
   }
   
   await updateDoc(orderRef, updates);
+}
+
+export async function takeDeliveryOrder(orderId: string, courierId: string) {
+  if (!db) return;
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+  
+  await runTransaction(db, async (transaction) => {
+    const orderDoc = await transaction.get(orderRef);
+    if (!orderDoc.exists()) {
+      throw new Error("Pesanan tidak ditemukan!");
+    }
+    
+    const data = orderDoc.data() as Order;
+    
+    if (data.courierId && data.courierId !== courierId) {
+      throw new Error("Maaf, pesanan ini sudah diambil oleh kurir lain.");
+    }
+    
+    if (data.status === "cancelled" || data.status === "completed") {
+      throw new Error("Pesanan ini sudah tidak aktif.");
+    }
+    
+    transaction.update(orderRef, {
+      courierId: courierId,
+      deliveryStatus: "en_route_pickup"
+    });
+  });
+}
+
+export async function cancelDeliveryOrder(orderId: string, courierId: string) {
+  if (!db) return;
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+  
+  await runTransaction(db, async (transaction) => {
+    const orderDoc = await transaction.get(orderRef);
+    if (!orderDoc.exists()) {
+      throw new Error("Pesanan tidak ditemukan!");
+    }
+    
+    const data = orderDoc.data() as Order;
+    
+    if (data.courierId !== courierId) {
+      throw new Error("Anda tidak memiliki hak untuk membatalkan pesanan ini.");
+    }
+    
+    transaction.update(orderRef, {
+      courierId: null, // Removes courier ownership
+      deliveryStatus: "waiting_courier"
+    });
+  });
 }
 
 export async function seedDatabase() {
