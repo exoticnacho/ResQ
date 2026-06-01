@@ -28,6 +28,7 @@ export default function AuthPage() {
       }
       router.push("/");
     } catch (err: unknown) {
+      console.error("Auth error details:", err);
       const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
       setError(
         msg.includes("invalid-credential") || msg.includes("wrong-password")
@@ -39,7 +40,7 @@ export default function AuthPage() {
           : msg.includes("invalid-email")
           ? "Format email tidak valid"
           : msg.includes("Firebase") || msg.includes("placeholder")
-          ? "Firebase belum dikonfigurasi. Silakan isi .env.local dengan kredensial Firebase Anda."
+          ? `Firebase error (${msg}). Periksa konfigurasi Anda.`
           : msg
       );
     } finally {
@@ -54,11 +55,12 @@ export default function AuthPage() {
       await loginWithGoogle();
       router.push("/");
     } catch (err: unknown) {
+      console.error("Google Auth error details:", err);
       const msg = err instanceof Error ? err.message : "";
       setError(
         msg.includes("popup-closed") ? "Login dibatalkan" :
         msg.includes("Firebase") || msg.includes("placeholder")
-          ? "Firebase belum dikonfigurasi. Silakan isi .env.local terlebih dahulu."
+          ? `Firebase error (${msg}). Periksa konfigurasi Anda.`
           : "Gagal login dengan Google"
       );
     } finally {
