@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToMyListings, addListing, updateListing, deleteListing, subscribeToDonorOrders, updateOrderStatus, Order } from "@/lib/db";
@@ -13,6 +13,8 @@ export default function DonorDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
+  const [newOrderAlert, setNewOrderAlert] = useState<Order | null>(null);
+  const prevOrdersRef = useRef<string[]>([]);
   
   // Form State
   const [name, setName] = useState("");
@@ -41,6 +43,45 @@ export default function DonorDashboard() {
       unsubOrders();
     };
   }, [user]);
+
+  useEffect(() => {
+    if (orders.length > 0 && prevOrdersRef.current.length > 0) {
+      const newActiveOrder = orders.find(
+        o => o.status === "active" && !prevOrdersRef.current.includes(o.id!)
+      );
+      if (newActiveOrder) {
+        setNewOrderAlert(newActiveOrder);
+        playNotificationSound();
+        const timer = setTimeout(() => setNewOrderAlert(null), 8000);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevOrdersRef.current = orders.map(o => o.id!);
+  }, [orders]);
+
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15);
+      
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    } catch (e) {
+      console.error("Audio error", e);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +188,41 @@ export default function DonorDashboard() {
             <p className="t-xs c-muted" style={{ marginTop: 2, fontSize: 12 }}>Dasbor Penjual</p>
           </div>
         </header>
+
+        {newOrderAlert && (
+          <div style={{
+            position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
+            background: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(12px)",
+            border: "1px solid var(--c-border)", borderRadius: "var(--radius-lg)",
+            padding: "16px 20px", boxShadow: "var(--sh-lg)", width: "calc(100% - 48px)", maxWidth: 400,
+            animation: "slideDown 0.4s var(--ease-spring)", display: "flex", flexDirection: "column", gap: 8
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-brand)", marginBottom: 4 }}>
+                  PESANAN BARU MASUK
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-ink)" }}>
+                  {newOrderAlert.foodName}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 2 }}>
+                  {newOrderAlert.quantity} Porsi - {newOrderAlert.isDelivery ? "Delivery" : "Ambil di Tempat"}
+                </div>
+              </div>
+              <button onClick={() => setNewOrderAlert(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--c-muted)" }}>&times;</button>
+            </div>
+            <button 
+              className="elite-btn-primary" 
+              onClick={() => {
+                handleUpdateStatus(newOrderAlert.id!, "ready");
+                setNewOrderAlert(null);
+              }}
+              style={{ marginTop: 8, height: 36, fontSize: 13 }}
+            >
+              Tandai Siap Diambil
+            </button>
+          </div>
+        )}
 
         {/* ────────────────────────────────────────────────────────
             FINANCIAL & ENVIRONMENTAL REPORTS PANEL (Bento-Style)
@@ -336,7 +412,7 @@ export default function DonorDashboard() {
                       alignItems: "center", justifyContent: "center", gap: 8 
                     }}
                   >
-                    ️ Hapus Listing
+                    Hapus Listing
                   </button>
                 )}
               </form>
@@ -359,10 +435,10 @@ export default function DonorDashboard() {
                 const getCourierStatusLabel = (delStatus?: string) => {
                   switch (delStatus) {
                     case "waiting_courier": return "Menunggu Kurir Terdekat...";
-                    case "en_route_pickup": return "Kurir Sedang Menuju Toko 🛵";
+                    case "en_route_pickup": return "Kurir Sedang Menuju Toko";
                     case "picked_up": return "Makanan Sudah Diserahkan ke Kurir";
-                    case "en_route_dropoff": return "Kurir Sedang Mengantar ke Konsumen 🛵";
-                    case "delivered": return "Makanan Tiba di Tujuan ✅";
+                    case "en_route_dropoff": return "Kurir Sedang Mengantar ke Konsumen";
+                    case "delivered": return "Makanan Tiba di Tujuan";
                     default: return "Menunggu Kurir...";
                   }
                 };
@@ -426,7 +502,7 @@ export default function DonorDashboard() {
 
                       {o.status === "ready" && o.isDelivery && (
                         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--c-muted)", background: "var(--c-surface)", border: "1px dashed var(--c-border)", borderRadius: "var(--radius-pill)", padding: "6px 12px" }}>
-                          ⌛ Kurir yang akan menyelesaikan pengantaran
+                          Kurir yang akan menyelesaikan pengantaran
                         </div>
                       )}
                       
@@ -456,7 +532,6 @@ export default function DonorDashboard() {
           
           {listings.length === 0 ? (
             <div className="elite-card flex-col items-center justify-center" style={{ padding: 40, textAlign: "center", background: "var(--c-surface)" }}>
-              <div style={{ fontSize: 44, marginBottom: 16 }}>️</div>
               <div className="t-h3 c-ink" style={{ marginBottom: 6 }}>Belum Ada Makanan</div>
               <div className="t-body c-muted">Tambahkan makanan sisa agar bisa diselamatkan.</div>
             </div>

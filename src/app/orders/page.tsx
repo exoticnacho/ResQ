@@ -483,7 +483,16 @@ export default function OrdersPage() {
                     🛵 Kurir sedang mengantar makanan Anda. Pesanan akan otomatis diselesaikan setelah tiba!
                   </div>
                 )}
-                {(selectedOrder.status === "active" || selectedOrder.status === "ready") && !selectedOrder.isDelivery && (
+                {!selectedOrder.isDelivery && selectedOrder.status === "active" && (
+                  <button
+                    disabled
+                    className="elite-btn-primary"
+                    style={{ width: "100%", display: "flex", justifyContent: "center", opacity: 0.5, cursor: "not-allowed" }}
+                  >
+                    Menunggu Makanan Disiapkan
+                  </button>
+                )}
+                {!selectedOrder.isDelivery && selectedOrder.status === "ready" && (
                   <button
                     onClick={() => handleCompleteOrder(selectedOrder.id!)}
                     disabled={completing}
