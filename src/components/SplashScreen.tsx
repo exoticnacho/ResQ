@@ -67,22 +67,6 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         position: "relative", zIndex: 2,
       }}>
 
-        {/* Logo Mark */}
-        <div style={{
-          width: 88, height: 88,
-          background: "linear-gradient(145deg, var(--c-brand) 0%, #B84030 100%)",
-          borderRadius: 28,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          marginBottom: 28,
-          boxShadow: `
-            0 0 0 1px rgba(255,255,255,0.18) inset,
-            0 20px 60px -12px rgba(217,101,75,0.5),
-            0 8px 24px -4px rgba(217,101,75,0.3)
-          `,
-          animation: "logoBreath 2.8s ease-in-out infinite",
-        }}>
-          
-        </div>
 
         {/* Wordmark */}
         <div style={{

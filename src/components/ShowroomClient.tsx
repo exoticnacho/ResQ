@@ -25,8 +25,7 @@ export default function ShowroomClient({ children }: { children: React.ReactNode
       <aside className="presentation-hub">
         <div>
           {/* Header */}
-          <div className="flex items-center gap-3" style={{ marginBottom: 40 }}>
-            
+          <div className="flex items-center" style={{ marginBottom: 40 }}>
             <div>
               <div className="flex items-center gap-2">
                 <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-1px" }}>ResQ</span>

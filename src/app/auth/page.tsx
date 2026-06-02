@@ -98,22 +98,14 @@ export default function AuthPage() {
 
       {/* ─── Header ─── */}
       <header style={{
-        padding: "20px 24px",
+        padding: "52px 24px 20px",
         display: "flex", alignItems: "center", justifyContent: "center",
         position: "relative", zIndex: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 36, height: 36,
-            background: "linear-gradient(135deg, var(--c-brand) 0%, #C05035 100%)",
-            borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 6px 20px rgba(217,101,75,0.35), inset 0 1px 1px rgba(255,255,255,0.25)"
-          }}>
-            
-          </div>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <span style={{
-            fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 22,
-            letterSpacing: "-0.8px", color: "var(--c-ink)"
+            fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 34,
+            letterSpacing: "-1.5px", color: "var(--c-ink)"
           }}>
             Res<span style={{ color: "var(--c-brand)" }}>Q</span>
           </span>
