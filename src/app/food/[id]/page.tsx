@@ -5,6 +5,84 @@ import { FoodListing } from "@/lib/seedData";
 import { subscribeToListings, placeOrder } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
 import CountdownTimer from "@/components/CountdownTimer";
+import React from "react";
+
+function SlideToPay({ onComplete, isProcessing }: { onComplete: () => void; isProcessing: boolean }) {
+  const [slideX, setSlideX] = useState(0);
+  const [isSliding, setIsSliding] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isProcessing) return;
+    setIsSliding(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isSliding || !containerRef.current || isProcessing) return;
+    const containerWidth = containerRef.current.getBoundingClientRect().width;
+    const knobWidth = 52; 
+    const maxSlide = containerWidth - knobWidth - 8;
+    const rect = containerRef.current.getBoundingClientRect();
+    let newX = e.clientX - rect.left - knobWidth / 2;
+    if (newX < 0) newX = 0;
+    if (newX > maxSlide) newX = maxSlide;
+    setSlideX(newX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isSliding || isProcessing) return;
+    setIsSliding(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!containerRef.current) return;
+    const containerWidth = containerRef.current.getBoundingClientRect().width;
+    const maxSlide = containerWidth - 52 - 8;
+    if (slideX > maxSlide * 0.75) {
+      setSlideX(maxSlide);
+      onComplete();
+    } else {
+      setSlideX(0);
+    }
+  };
+
+  return (
+    <div 
+      ref={containerRef}
+      style={{
+        width: "100%", height: 60, background: "var(--c-brand)",
+        borderRadius: 99, position: "relative",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden", opacity: isProcessing ? 0.7 : 1,
+        boxShadow: "0 8px 24px -6px rgba(217,101,75,0.4), inset 0 1px 1px rgba(255,255,255,0.2)"
+      }}
+    >
+      <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, opacity: Math.max(0, 1 - slideX/100) }}>
+        {isProcessing ? "Memproses..." : "Geser untuk Bayar"}
+      </span>
+      
+      {!isProcessing && (
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={{
+            position: "absolute", top: 4, left: 4 + slideX,
+            width: 52, height: 52, borderRadius: "50%",
+            background: "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "grab", touchAction: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            transition: isSliding ? "none" : "left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            zIndex: 2
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function FoodDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -60,8 +138,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   const totalSaved = originalSubtotal - rescueSubtotal;
   const co2Offset = parseFloat((0.8 * quantity).toFixed(1));
 
-  const handleCheckout = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.transform = "scale(0.95)";
+  const handleCheckout = async () => {
     if (!user) {
       router.push("/auth");
       return;
@@ -87,7 +164,6 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
     } catch (error: any) {
       alert(error.message || "Gagal memproses transaksi");
       setIsProcessing(false);
-      if (e.currentTarget) e.currentTarget.style.transform = "scale(1)";
     }
   };
 
@@ -299,17 +375,7 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
            </div>
         </div>
         
-        <button
-          className="elite-btn-primary"
-          onClick={handleCheckout}
-          disabled={isProcessing}
-          style={{ justifyContent: "space-between", opacity: isProcessing ? 0.7 : 1 }}
-        >
-          <span style={{ fontSize: 18 }}>{isProcessing ? "Memproses..." : "Gesek untuk Bayar"}</span>
-          <span style={{ background: "rgba(255,255,255,0.2)", padding: "8px", borderRadius: "50%", display: "flex" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </span>
-        </button>
+        <SlideToPay onComplete={handleCheckout} isProcessing={isProcessing} />
       </div>
 
     </div>

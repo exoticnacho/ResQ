@@ -194,9 +194,12 @@ export default function HomePage() {
           CATEGORY CHIPS (Apple Style Horizontal Scroll)
       ──────────────────────────────────────────────────────── */}
       <section className="fade-up delay-3">
-        <div className="scroll-area" style={{ 
+        <div style={{ 
           display: "flex", gap: 8, padding: "0 24px", 
-          overflowX: "auto", width: "100%", marginTop: 8
+          overflowX: "auto", width: "100%", marginTop: 8,
+          WebkitOverflowScrolling: "touch",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none"
         }}>
           {CATEGORIES.map((cat) => (
             <button
@@ -229,7 +232,13 @@ export default function HomePage() {
             </h2>
           </div>
           
-          <div className="flex scroll-area gap-4" style={{ paddingBottom: 20, margin: "0 -24px", paddingLeft: 24, paddingRight: 24, overflowX: "auto" }}>
+          <div className="flex gap-4" style={{ 
+            paddingBottom: 20, margin: "0 -24px", paddingLeft: 24, paddingRight: 24, 
+            overflowX: "auto", 
+            WebkitOverflowScrolling: "touch",
+            msOverflowStyle: "none",
+            scrollbarWidth: "none"
+          }}>
             {URGENT_LISTINGS.map((l, i) => {
               const discount = Math.round((1 - l.rescuePrice / l.originalPrice) * 100);
               return (
@@ -238,6 +247,7 @@ export default function HomePage() {
                   key={l.id} 
                   className="elite-card card-interactive" 
                   style={{ 
+                    flexShrink: 0,
                     minWidth: 280, 
                     padding: 16, 
                     animationDelay: `${i*100}ms`,
