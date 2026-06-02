@@ -14,6 +14,7 @@ export default function CourierDashboard() {
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [proofPhoto, setProofPhoto] = useState<string | null>(null);
 
   // Calculate earnings from all completed jobs
   const [todayEarnings, setTodayEarnings] = useState(0);
@@ -387,16 +388,49 @@ export default function CourierDashboard() {
             <h2 className="t-h2 c-ink" style={{ fontSize: 22, marginBottom: 8 }}>Bukti Pengantaran</h2>
             <p className="t-sm c-muted" style={{ marginBottom: 24, textTransform: "none" }}>Ambil foto makanan di lokasi tujuan sebagai bukti konfirmasi pengantaran.</p>
             
-            <div style={{
-              width: "100%", height: 220, background: "var(--cream-card)", borderRadius: "var(--radius-xl)",
-              border: "2px dashed rgba(217,101,75,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
-              flexDirection: "column", gap: 14, marginBottom: 32, cursor: "pointer", transition: "all 0.2s"
-            }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--c-brand-faint)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            {proofPhoto ? (
+              <div style={{
+                width: "100%", height: 220, borderRadius: "var(--radius-xl)",
+                overflow: "hidden", marginBottom: 32, position: "relative"
+              }}>
+                <img src={proofPhoto} alt="Bukti" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button 
+                  onClick={() => setProofPhoto(null)}
+                  style={{ position: "absolute", top: 12, right: 12, width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
-              <span className="t-sm c-brand" style={{ fontWeight: 800 }}>Ketuk untuk Buka Kamera</span>
-            </div>
+            ) : (
+              <label style={{
+                width: "100%", height: 220, background: "var(--cream-card)", borderRadius: "var(--radius-xl)",
+                border: "2px dashed rgba(217,101,75,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
+                flexDirection: "column", gap: 14, marginBottom: 32, cursor: "pointer", transition: "all 0.2s"
+              }}>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  style={{ display: "none" }} 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        if (typeof reader.result === "string") {
+                          setProofPhoto(reader.result);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--c-brand-faint)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--c-brand)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+                <span className="t-sm c-brand" style={{ fontWeight: 800 }}>Ketuk untuk Buka Kamera</span>
+              </label>
+            )}
 
             <button 
               className="elite-btn-primary" style={{ width: "100%", padding: "16px", fontSize: 16, display: "flex", justifyContent: "center", boxShadow: "0 10px 25px rgba(217,101,75,0.25)" }}
@@ -407,10 +441,11 @@ export default function CourierDashboard() {
                   handleUpdateStatus(activeJob.id!, "delivered");
                   setIsUploading(false);
                   setIsPhotoModalOpen(false);
+                  setProofPhoto(null);
                 }, 1500);
               }}
             >
-              {isUploading ? "Mengunggah Bukti..." : "Unggah & Selesaikan"}
+              {isUploading ? "Memproses..." : (proofPhoto ? "Unggah & Selesaikan" : "Selesaikan Tanpa Bukti")}
             </button>
             <button 
               onClick={() => setIsPhotoModalOpen(false)}

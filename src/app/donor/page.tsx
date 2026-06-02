@@ -163,9 +163,9 @@ export default function DonorDashboard() {
   };
 
   // Financial and CO2 Stats Calculations
-  const completedOrReadyOrders = orders.filter(o => o.status === "completed" || o.status === "ready");
-  const totalRevenue = completedOrReadyOrders.reduce((sum, o) => sum + o.totalPrice, 0);
-  const totalPortionsSold = completedOrReadyOrders.reduce((sum, o) => sum + o.quantity, 0);
+  const completedOrders = orders.filter(o => o.status === "completed");
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const totalPortionsSold = completedOrders.reduce((sum, o) => sum + o.quantity, 0);
   const totalCO2Saved = parseFloat((totalPortionsSold * 0.8).toFixed(1));
 
   const incomingOrders = orders.filter(o => o.status === "active" || o.status === "ready");
