@@ -1099,7 +1099,12 @@ export default function ProfilePage() {
                   <div style={{ borderTop: "1px solid var(--c-border)", paddingTop: 12, marginTop: 4 }} className="flex-col gap-2">
                     <span className="t-xs c-muted" style={{ fontWeight: 700 }}>BUTUH BANTUAN LAIN?</span>
                     <button 
-                      onClick={() => triggerToast("Menghubungi Live Chat ResQ Care...")}
+                      onClick={() => {
+                        triggerToast("Membuka Email ResQ Care...");
+                        setTimeout(() => {
+                          window.location.href = "mailto:marco.535240107@stu.untar.ac.id?subject=Bantuan%20Platform%20ResQ&body=Halo%20Tim%20Support%20ResQ,%0D%0A%0D%0A[Tuliskan%20pertanyaan%20atau%20masalah%20Anda%20di%20sini]";
+                        }, 600);
+                      }}
                       style={{
                         background: "rgba(217, 101, 75, 0.08)", color: "var(--c-brand)",
                         border: "1px solid var(--c-brand-faint)", borderRadius: 12, padding: "12px",
