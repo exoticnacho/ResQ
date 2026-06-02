@@ -31,10 +31,14 @@ export default function CourierDashboard() {
   useEffect(() => {
     if (!user) return;
     const unsubMy = subscribeToMyDeliveries(user.uid, (orders) => {
-      setMyJobs(orders);
+      const activeJobs = orders.filter(o => o.status === "active" || o.status === "ready");
+      setMyJobs(activeJobs);
+      
+      const completedJobs = orders.filter(o => o.status === "completed" && o.deliveryStatus === "delivered");
       
       // Calculate earnings from my jobs that are delivered/completed
-      // In a real app we would query all completed deliveries for today
+      const earnings = completedJobs.reduce((sum, job) => sum + (job.deliveryFee || 15000), 0);
+      setTodayEarnings(earnings);
     });
     
     return () => unsubMy();
@@ -197,6 +201,19 @@ export default function CourierDashboard() {
                   <div style={{ width: "100%", marginTop: 2 }}>
                     <h4 className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16, margin: 0 }}>Menuju Restoran</h4>
                     <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 4, fontSize: 13 }}>Jemput {activeJob.quantity}x {activeJob.foodName} di <strong className="c-ink">{activeJob.donorName}</strong></p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, marginBottom: 8 }}>
+                      <span style={{ 
+                        display: "inline-block", width: 6, height: 6, borderRadius: "50%", 
+                        background: activeJob.status === "ready" ? "#10B981" : "#F59E0B"
+                      }} />
+                      <span className="t-xs" style={{ 
+                        fontWeight: 700, 
+                        color: activeJob.status === "ready" ? "#10B981" : "#F59E0B",
+                        fontSize: 12
+                      }}>
+                        {activeJob.status === "ready" ? "Toko: Makanan Siap Diambil" : "Toko: Sedang Menyiapkan Makanan..."}
+                      </span>
+                    </div>
                     {activeJob.deliveryStatus === "en_route_pickup" && (
                       <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
                         <button onClick={() => handleCancelOrder(activeJob.id!)} className="elite-btn-secondary" style={{ flex: 1, padding: "12px", fontSize: 14, background: "var(--c-surface)", color: "#EF4444", border: "1px solid var(--c-border)", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: 700 }}>
@@ -221,9 +238,53 @@ export default function CourierDashboard() {
                     <h4 className="t-sm c-ink" style={{ fontWeight: 800, fontSize: 16, margin: 0 }}>Pesanan Diambil</h4>
                     <p className="t-xs c-muted" style={{ textTransform: "none", marginTop: 4, fontSize: 13 }}>Pastikan pesanan sesuai sebelum berangkat.</p>
                     {activeJob.deliveryStatus === "picked_up" && (
-                      <button onClick={() => handleUpdateStatus(activeJob.id!, "en_route_dropoff")} className="elite-btn-primary" style={{ width: "100%", marginTop: 14, padding: "12px", fontSize: 14, boxShadow: "0 8px 16px rgba(217,101,75,0.2)" }}>
-                        Mulai Pengantaran
-                      </button>
+                      activeJob.status === "ready" ? (
+                        <button onClick={() => handleUpdateStatus(activeJob.id!, "en_route_dropoff")} className="elite-btn-primary" style={{ width: "100%", marginTop: 14, padding: "12px", fontSize: 14, boxShadow: "0 8px 16px rgba(217,101,75,0.2)" }}>
+                          Mulai Pengantaran
+                        </button>
+                      ) : (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ 
+                            padding: "10px 14px", 
+                            background: "var(--c-brand-faint)", 
+                            border: "1px solid rgba(217, 101, 75, 0.2)", 
+                            borderRadius: "var(--radius-lg)", 
+                            color: "var(--c-brand)", 
+                            fontSize: 12, 
+                            fontWeight: 700, 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: 8 
+                          }}>
+                            <span style={{ 
+                              display: "inline-block", 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: "50%", 
+                              background: "var(--c-brand)",
+                              animation: "pulse-dot 2.5s infinite ease-in-out"
+                            }} />
+                            Toko belum menandai siap diambil. Tunggu hingga toko siap.
+                          </div>
+                          <button 
+                            disabled 
+                            className="elite-btn-primary" 
+                            style={{ 
+                              width: "100%", 
+                              marginTop: 10, 
+                              padding: "12px", 
+                              fontSize: 14, 
+                              background: "var(--c-muted)", 
+                              color: "var(--c-border)", 
+                              cursor: "not-allowed",
+                              opacity: 0.6,
+                              boxShadow: "none"
+                            }}
+                          >
+                            Menunggu Makanan Siap...
+                          </button>
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -344,7 +405,6 @@ export default function CourierDashboard() {
                 setIsUploading(true);
                 setTimeout(() => {
                   handleUpdateStatus(activeJob.id!, "delivered");
-                  setTodayEarnings(prev => prev + (activeJob.deliveryFee || 0));
                   setIsUploading(false);
                   setIsPhotoModalOpen(false);
                 }, 1500);

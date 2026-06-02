@@ -238,10 +238,8 @@ export function subscribeToMyDeliveries(courierId: string, callback: (orders: Or
     const orders: Order[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data() as Order;
-      // Filter active deliveries locally
-      if (data.status === "active" || data.status === "ready") {
-        orders.push({ id: doc.id, ...data });
-      }
+      // Return all deliveries to calculate earnings on client
+      orders.push({ id: doc.id, ...data });
     });
     callback(orders);
   });

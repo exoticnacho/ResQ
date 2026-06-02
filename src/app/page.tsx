@@ -5,7 +5,6 @@ import { CATEGORIES, FoodListing } from "@/lib/seedData";
 import { subscribeToListings, seedDatabase, subscribeToUserStats, UserProfile } from "@/lib/db";
 import CountdownTimer from "@/components/CountdownTimer";
 import { StreakWidget } from "@/components/StreakWidget";
-import { SwipeableCard } from "@/components/SwipeableCard";
 import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
@@ -234,7 +233,20 @@ export default function HomePage() {
             {URGENT_LISTINGS.map((l, i) => {
               const discount = Math.round((1 - l.rescuePrice / l.originalPrice) * 100);
               return (
-                <SwipeableCard foodId={l.id} key={l.id} className="elite-card" style={{ minWidth: 280, padding: 16, animationDelay: `${i*100}ms` }}>
+                <Link 
+                  href={`/food/${l.id}`}
+                  key={l.id} 
+                  className="elite-card card-interactive" 
+                  style={{ 
+                    minWidth: 280, 
+                    padding: 16, 
+                    animationDelay: `${i*100}ms`,
+                    position: "relative",
+                    textDecoration: "none",
+                    display: "block",
+                    cursor: "pointer"
+                  }}
+                >
                   
                   {/* Luxury Discount Sticker */}
                   <span className="discount-luxury" style={{ top: 24, left: 24 }}>-{discount}% OFF</span>
@@ -274,7 +286,7 @@ export default function HomePage() {
                       {l.isDelivery && <span className="tag tag-yellow">Delivery</span>}
                     </div>
                   </div>
-                </SwipeableCard>
+                </Link>
               );
             })}
           </div>
