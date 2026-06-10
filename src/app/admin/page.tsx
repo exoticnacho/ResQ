@@ -133,14 +133,14 @@ function LineChart({ data, color = "var(--c-brand)", label, labels = [] }: { dat
 // ─── Status Badge ─────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; label: string; border: string }> = {
-    pending:   { bg: "rgba(9, 9, 11, 0.02)", color: "var(--c-muted)", label: "Menunggu", border: "1px solid rgba(9, 9, 11, 0.05)" },
-    approved:  { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Disetujui", border: "1px solid rgba(9, 9, 11, 0.08)" },
-    rejected:  { bg: "transparent", color: "var(--c-muted)", label: "Ditolak", border: "1px solid rgba(9, 9, 11, 0.05)" },
-    active:    { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Aktif", border: "1px solid rgba(9, 9, 11, 0.08)" },
-    completed: { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Selesai", border: "1px solid rgba(9, 9, 11, 0.08)" },
-    cancelled: { bg: "transparent", color: "var(--c-muted)", label: "Dibatalkan", border: "1px solid rgba(9, 9, 11, 0.05)" },
-    refunded:  { bg: "transparent", color: "var(--c-muted)", label: "Di-Refund", border: "1px solid rgba(9, 9, 11, 0.05)" },
-    ready:     { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Siap", border: "1px solid rgba(9, 9, 11, 0.08)" },
+    pending:   { bg: "rgba(234, 179, 8, 0.1)", color: "#ca8a04", label: "Menunggu", border: "1px solid rgba(234, 179, 8, 0.2)" },
+    approved:  { bg: "rgba(34, 197, 94, 0.1)", color: "#16a34a", label: "Disetujui", border: "1px solid rgba(34, 197, 94, 0.2)" },
+    rejected:  { bg: "rgba(239, 68, 68, 0.1)", color: "#dc2626", label: "Ditolak", border: "1px solid rgba(239, 68, 68, 0.2)" },
+    active:    { bg: "rgba(59, 130, 246, 0.1)", color: "#2563eb", label: "Aktif", border: "1px solid rgba(59, 130, 246, 0.2)" },
+    completed: { bg: "rgba(34, 197, 94, 0.1)", color: "#16a34a", label: "Selesai", border: "1px solid rgba(34, 197, 94, 0.2)" },
+    cancelled: { bg: "rgba(239, 68, 68, 0.1)", color: "#dc2626", label: "Dibatalkan", border: "1px solid rgba(239, 68, 68, 0.2)" },
+    refunded:  { bg: "rgba(168, 85, 247, 0.1)", color: "#9333ea", label: "Di-Refund", border: "1px solid rgba(168, 85, 247, 0.2)" },
+    ready:     { bg: "rgba(59, 130, 246, 0.1)", color: "#2563eb", label: "Siap", border: "1px solid rgba(59, 130, 246, 0.2)" },
   };
   const s = map[status] || { bg: "rgba(9, 9, 11, 0.02)", color: "var(--c-muted)", label: status, border: "1px solid rgba(9, 9, 11, 0.05)" };
   return (
@@ -161,9 +161,9 @@ function StatCard({ icon, label, value, sub, accent = "var(--c-ink)" }: { icon: 
         <div style={{
           width: 40, height: 40,
           borderRadius: 12,
-          background: "rgba(9, 9, 11, 0.04)",
+          background: `color-mix(in srgb, ${accent} 10%, transparent)`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--c-ink)",
+          color: accent,
         }}>
           {icon}
         </div>
@@ -333,8 +333,38 @@ export default function AdminPanel() {
   };
 
   const handleExportCSV = () => {
+    if (orders.length === 0) {
+      triggerToast("Tidak ada data untuk diekspor.");
+      return;
+    }
+
+    const headers = ["ID Pesanan", "Tanggal", "Item", "Mitra", "Total Harga", "Status"];
+    const rows = orders.map(o => {
+      let dateStr = "";
+      if (o.createdAt) {
+        const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+        dateStr = d.toISOString();
+      }
+      return [
+        o.id,
+        dateStr,
+        `"${(o.foodName || "Pesanan ResQ").replace(/"/g, '""')}"`,
+        `"${(o.donorName || "Tidak diketahui").replace(/"/g, '""')}"`,
+        o.totalPrice || 0,
+        o.status || ""
+      ].join(",");
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `resq_transactions_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     triggerToast("Data Transaksi berhasil diekspor ke CSV.");
-    // In real app: convert JSON to CSV and trigger download.
   };
 
   const handleSaveSettings = async () => {
@@ -523,9 +553,9 @@ export default function AdminPanel() {
               {tab === "overview" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-                    <StatCard label="Total Penjualan (GMV)" value={formatRupiah(totalRevenue)} sub="Gross Merchandise Value" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} />
-                    <StatCard label="Total Pesanan" value={totalOrders} sub={`${completedOrders} selesai`} icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>} />
-                    <StatCard label="Pengguna Aktif" value={totalUsers} sub="Termasuk mitra & kurir" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+                    <StatCard label="Total Penjualan (GMV)" value={formatRupiah(totalRevenue)} sub="Gross Merchandise Value" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} accent="#16a34a" />
+                    <StatCard label="Total Pesanan" value={totalOrders} sub={`${completedOrders} selesai`} icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>} accent="#3b82f6" />
+                    <StatCard label="Pengguna Aktif" value={totalUsers} sub="Termasuk mitra & kurir" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} accent="#9333ea" />
                   </div>
 
                   <div className="elite-card" style={{ padding: "32px", borderRadius: "var(--radius-lg)" }}>
