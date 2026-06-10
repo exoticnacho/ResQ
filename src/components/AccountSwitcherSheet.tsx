@@ -561,6 +561,105 @@ export default function AccountSwitcherSheet({ open, onClose }: AccountSwitcherS
             </div>
           </button>
 
+          {/* Separator */}
+          <div style={{
+            height: 1,
+            background: "var(--c-border)",
+            margin: "6px 4px",
+            opacity: 0.6
+          }} />
+
+          {/* Admin Portal Option */}
+          <button
+            onClick={() => {
+              onClose();
+              router.push("/admin");
+            }}
+            style={{
+              width: "100%",
+              padding: "18px 20px",
+              borderRadius: "var(--radius-lg)",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              background: "rgba(9, 9, 11, 0.02)",
+              border: "1.5px dashed var(--c-border)",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "all 0.25s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(9, 9, 11, 0.06)";
+              e.currentTarget.style.borderColor = "var(--c-brand)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(9, 9, 11, 0.02)";
+              e.currentTarget.style.borderColor = "var(--c-border)";
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 18,
+                background: "linear-gradient(135deg, #18181B, #3F3F46)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 24,
+                flexShrink: 0,
+                boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 3,
+                }}
+              >
+                <span
+                  className="t-sm c-ink"
+                  style={{ fontWeight: 800, fontSize: 15 }}
+                >
+                  Pusat Kendali Admin
+                </span>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    padding: "2px 8px",
+                    borderRadius: 99,
+                    background: "rgba(0,0,0,0.08)",
+                    color: "var(--c-ink)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Terbatas
+                </span>
+              </div>
+              <span
+                className="t-xs c-muted"
+                style={{ textTransform: "none", fontSize: 12 }}
+              >
+                Audit sistem, kelola transaksi, & validasi mitra baru
+              </span>
+            </div>
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+
           </div>
         )}
       </div>

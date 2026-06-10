@@ -6,6 +6,8 @@ import { subscribeToListings, placeOrder } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
 import CountdownTimer from "@/components/CountdownTimer";
 import React from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function SlideToPay({ onComplete, isProcessing }: { onComplete: () => void; isProcessing: boolean }) {
   const [slideX, setSlideX] = useState(0);
@@ -96,6 +98,24 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   const [quantity, setQuantity] = useState(1);
   const [payment, setPayment] = useState<"gopay" | "ovo" | "shopeepay">("gopay");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [deliveryMargin, setDeliveryMargin] = useState(0);
+  const [platformCommission, setPlatformCommission] = useState(0);
+
+  useEffect(() => {
+    if (!db) return;
+    const unsub = onSnapshot(doc(db, "settings", "platform"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.deliveryMargin !== undefined) {
+          setDeliveryMargin(Number(data.deliveryMargin));
+        }
+        if (data.feePercent !== undefined) {
+          setPlatformCommission(Number(data.feePercent));
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = subscribeToListings((data) => {
@@ -120,16 +140,16 @@ export default function FoodDetailPage({ params }: { params: Promise<{ id: strin
   const discount = Math.round((1 - listing.rescuePrice / listing.originalPrice) * 100);
 
   // Dynamic calculations
-  const platformFee = 0;
+  const platformFee = platformCommission;
   // Stable simulated distance in km for this listing (between 1.2 km to 5.2 km)
   const simulatedDistance = parseFloat(
     (((listing.id.charCodeAt(0) + (listing.id.charCodeAt(1) || 0)) % 40) / 10 + 1.2).toFixed(1)
   );
-  // Indonesian standard rate: Rp 7.000 for first 2 km, Rp 2.000 per km thereafter
+  // Indonesian standard rate: Rp 7.000 for first 2 km, Rp 2.000 per km thereafter + deliveryMargin
   const deliveryFee = method === "delivery"
     ? (simulatedDistance <= 2
         ? 7000
-        : 7000 + Math.round((simulatedDistance - 2) * 2000))
+        : 7000 + Math.round((simulatedDistance - 2) * 2000)) + deliveryMargin
     : 0;
 
   const rescueSubtotal = listing.rescuePrice * quantity;

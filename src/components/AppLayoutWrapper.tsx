@@ -9,7 +9,7 @@ import { AccountModeProvider } from "@/context/AccountModeContext";
 import AccountSwitcherSheet from "./AccountSwitcherSheet";
 
 // Pages that do NOT require authentication
-const PUBLIC_PATHS = ["/auth", "/pitch"];
+const PUBLIC_PATHS = ["/auth", "/pitch", "/admin"];
 
 function InnerWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,9 +26,9 @@ function InnerWrapper({ children }: { children: React.ReactNode }) {
     }
   }, [splashDone, loading, user, pathname, router]);
 
-  if (pathname === "/pitch") {
+  if (pathname === "/pitch" || pathname === "/admin") {
     return (
-      <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
+      <div style={{ width: "100vw", minHeight: "100vh", overflow: "auto" }}>
         {children}
       </div>
     );

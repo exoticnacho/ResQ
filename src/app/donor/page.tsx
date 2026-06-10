@@ -6,6 +6,8 @@ import { subscribeToMyListings, addListing, updateListing, deleteListing, subscr
 import { FoodListing, CATEGORIES } from "@/lib/seedData";
 import AccountSwitcherSheet from "@/components/AccountSwitcherSheet";
 import CountdownTimer from "@/components/CountdownTimer";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function DonorDashboard() {
   const { user } = useAuth();
@@ -15,6 +17,29 @@ export default function DonorDashboard() {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [newOrderAlert, setNewOrderAlert] = useState<Order | null>(null);
   const prevOrdersRef = useRef<string[]>([]);
+  
+  const [platformCommission, setPlatformCommission] = useState(0);
+
+  useEffect(() => {
+    if (!db) return;
+    
+    // Initial fetch to avoid snapshot delay issues
+    getDoc(doc(db, "settings", "platform")).then((snap) => {
+      if (snap.exists() && snap.data().feePercent !== undefined) {
+        setPlatformCommission(Number(snap.data().feePercent));
+      }
+    });
+
+    const unsub = onSnapshot(doc(db, "settings", "platform"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.feePercent !== undefined) {
+          setPlatformCommission(Number(data.feePercent));
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
   
   // Form State
   const [name, setName] = useState("");
@@ -358,11 +383,11 @@ export default function DonorDashboard() {
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--c-muted)", fontWeight: 600 }}>
                       <span>Komisi ResQ (Platform)</span>
-                      <span style={{ color: "var(--c-brand)", fontWeight: 700 }}>-Rp 2.000</span>
+                      <span style={{ color: "var(--c-brand)", fontWeight: 700 }}>-Rp {platformCommission.toLocaleString('id-ID')}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--c-ink)", fontWeight: 800, borderTop: "1px dashed var(--c-border)", paddingTop: 8 }}>
                       <span>Pendapatan Bersih (Net)</span>
-                      <span style={{ color: "#10B981" }}>Rp {Math.max(0, parseInt(rescuePrice) - 2000).toLocaleString('id-ID')}</span>
+                      <span style={{ color: "#10B981" }}>Rp {Math.max(0, parseInt(rescuePrice) - platformCommission).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
                 )}

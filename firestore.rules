@@ -29,5 +29,11 @@ service cloud.firestore {
         resource.data.donorId == request.auth.uid
       );
     }
+    
+    // 4. Platform Settings
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

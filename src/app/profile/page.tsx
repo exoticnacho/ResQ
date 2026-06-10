@@ -622,6 +622,29 @@ export default function ProfilePage() {
           </button>
         </section>
 
+        {/* Subtle Admin Entry Point */}
+        <section style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
+          <button
+            onClick={() => router.push("/admin")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--c-muted)",
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: "pointer",
+              textDecoration: "underline",
+              opacity: 0.6,
+              transition: "opacity 0.2s"
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = "0.6"}
+          >
+            Pusat Kendali Admin
+          </button>
+        </section>
+
+
         {/* ────────────────────────────────────────────────────────
             DYNAMIC INTERACTIVE MODALS
         ──────────────────────────────────────────────────────── */}
