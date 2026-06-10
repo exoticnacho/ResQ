@@ -6,6 +6,10 @@ import { subscribeToListings, seedDatabase, subscribeToUserStats, UserProfile } 
 import CountdownTimer from "@/components/CountdownTimer";
 import { StreakWidget } from "@/components/StreakWidget";
 import { useAuth } from "@/context/AuthContext";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+
+const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -38,6 +42,8 @@ export default function HomePage() {
     const searchMatch = !search || l.name.toLowerCase().includes(search.toLowerCase());
     return catMatch && searchMatch;
   });
+
+  const router = useRouter();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32, padding: "24px 0", paddingBottom: 100, position: "relative", zIndex: 10 }}>

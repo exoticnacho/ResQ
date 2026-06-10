@@ -27,14 +27,30 @@ const selectedIcon = makeMarker("#D4A843", 40);
 // Custom Map tile — Stamen Toner Lite for premium minimal look
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
+import { useMap } from "react-leaflet";
+import { useEffect } from "react";
+
+function InvalidateMapSize({ showMap }: { showMap?: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (showMap) {
+      map.invalidateSize();
+      const t = setTimeout(() => map.invalidateSize(), 150);
+      return () => clearTimeout(t);
+    }
+  }, [map, showMap]);
+  return null;
+}
+
 interface MapInnerProps {
   listings: FoodListing[];
   center?: [number, number];
   selectedId?: string;
   onMarkerClick?: (id: string) => void;
+  showMap?: boolean;
 }
 
-export default function MapInner({ listings, center, selectedId, onMarkerClick }: MapInnerProps) {
+export default function MapInner({ listings, center, selectedId, onMarkerClick, showMap }: MapInnerProps) {
   const mapCenter: [number, number] = center ?? [-6.2088, 106.8456];
 
   return (
@@ -46,6 +62,7 @@ export default function MapInner({ listings, center, selectedId, onMarkerClick }
       scrollWheelZoom={false}
       attributionControl={false}
     >
+      <InvalidateMapSize showMap={showMap} />
       <TileLayer url={TILE_URL} />
       {listings.map((listing) => (
         <Marker

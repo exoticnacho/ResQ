@@ -15,12 +15,13 @@ interface MapViewProps {
   height?: number;
   selectedId?: string;
   onMarkerClick?: (id: string) => void;
+  showMap?: boolean;
 }
 
-export default function MapView({ listings, center, height = 240, selectedId, onMarkerClick }: MapViewProps) {
+export default function MapView({ listings, center, height = 240, selectedId, onMarkerClick, showMap }: MapViewProps) {
   return (
     <div style={{ width: "100%", height }}>
-      <MapInner listings={listings} center={center} selectedId={selectedId} onMarkerClick={onMarkerClick} />
+      <MapInner listings={listings} center={center} selectedId={selectedId} onMarkerClick={onMarkerClick} showMap={showMap} />
     </div>
   );
 }

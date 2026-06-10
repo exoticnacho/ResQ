@@ -132,39 +132,38 @@ function LineChart({ data, color = "var(--c-brand)", label, labels = [] }: { dat
 
 // ─── Status Badge ─────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { dot: string; label: string }> = {
-    pending:   { dot: "#D97706", label: "Menunggu" },
-    approved:  { dot: "#059669", label: "Disetujui" },
-    rejected:  { dot: "#DC2626", label: "Ditolak"  },
-    active:    { dot: "#059669", label: "Aktif"    },
-    completed: { dot: "#059669", label: "Selesai"  },
-    cancelled: { dot: "#DC2626", label: "Dibatalkan"  },
-    refunded:  { dot: "#4B5563", label: "Di-Refund" },
-    ready:     { dot: "#2563EB", label: "Siap"     },
+  const map: Record<string, { bg: string; color: string; label: string; border: string }> = {
+    pending:   { bg: "rgba(9, 9, 11, 0.02)", color: "var(--c-muted)", label: "Menunggu", border: "1px solid rgba(9, 9, 11, 0.05)" },
+    approved:  { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Disetujui", border: "1px solid rgba(9, 9, 11, 0.08)" },
+    rejected:  { bg: "transparent", color: "var(--c-muted)", label: "Ditolak", border: "1px solid rgba(9, 9, 11, 0.05)" },
+    active:    { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Aktif", border: "1px solid rgba(9, 9, 11, 0.08)" },
+    completed: { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Selesai", border: "1px solid rgba(9, 9, 11, 0.08)" },
+    cancelled: { bg: "transparent", color: "var(--c-muted)", label: "Dibatalkan", border: "1px solid rgba(9, 9, 11, 0.05)" },
+    refunded:  { bg: "transparent", color: "var(--c-muted)", label: "Di-Refund", border: "1px solid rgba(9, 9, 11, 0.05)" },
+    ready:     { bg: "rgba(9, 9, 11, 0.06)", color: "var(--c-ink)", label: "Siap", border: "1px solid rgba(9, 9, 11, 0.08)" },
   };
-  const s = map[status] || { dot: "var(--c-muted)", label: status };
+  const s = map[status] || { bg: "rgba(9, 9, 11, 0.02)", color: "var(--c-muted)", label: status, border: "1px solid rgba(9, 9, 11, 0.05)" };
   return (
     <span style={{ 
-      background: "var(--c-faint)", color: "var(--c-ink)", border: "1px solid var(--c-border)",
-      borderRadius: "var(--radius-pill)", padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6
+      background: s.bg, color: s.color, border: s.border,
+      borderRadius: "6px", padding: "4px 8px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center"
     }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }} />
       {s.label}
     </span>
   );
 }
 
 // ─── Stat Card ───────────────────────────────
-function StatCard({ icon, label, value, sub, accent = "var(--c-brand)" }: { icon: React.ReactNode; label: string; value: string | number; sub?: string; accent?: string }) {
+function StatCard({ icon, label, value, sub, accent = "var(--c-ink)" }: { icon: React.ReactNode; label: string; value: string | number; sub?: string; accent?: string }) {
   return (
     <div className="elite-card" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{
           width: 40, height: 40,
           borderRadius: 12,
-          background: `color-mix(in srgb, ${accent} 10%, transparent)`,
+          background: "rgba(9, 9, 11, 0.04)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: accent,
+          color: "var(--c-ink)",
         }}>
           {icon}
         </div>
@@ -525,8 +524,8 @@ export default function AdminPanel() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
                     <StatCard label="Total Penjualan (GMV)" value={formatRupiah(totalRevenue)} sub="Gross Merchandise Value" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} />
-                    <StatCard accent="#059669" label="Total Pesanan" value={totalOrders} sub={`${completedOrders} selesai`} icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>} />
-                    <StatCard accent="#2563EB" label="Pengguna Aktif" value={totalUsers} sub="Termasuk mitra & kurir" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+                    <StatCard label="Total Pesanan" value={totalOrders} sub={`${completedOrders} selesai`} icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>} />
+                    <StatCard label="Pengguna Aktif" value={totalUsers} sub="Termasuk mitra & kurir" icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
                   </div>
 
                   <div className="elite-card" style={{ padding: "32px", borderRadius: "var(--radius-lg)" }}>
@@ -535,7 +534,7 @@ export default function AdminPanel() {
                         <h3 className="t-h3" style={{ marginBottom: 4 }}>Tren Pendapatan</h3>
                         <p className="t-sm">Performa transaksi 7 hari terakhir</p>
                       </div>
-                      <div style={{ background: "rgba(5, 150, 105, 0.1)", color: "#059669", padding: "6px 12px", borderRadius: "var(--radius-pill)", fontSize: 12, fontWeight: 700 }}>+12.4% vs Minggu Lalu</div>
+                      <div style={{ background: "rgba(9, 9, 11, 0.04)", color: "var(--c-ink)", border: "1px solid rgba(9, 9, 11, 0.05)", padding: "4px 8px", borderRadius: "6px", fontSize: 11, fontWeight: 700 }}>+12.4% vs Minggu Lalu</div>
                     </div>
                     <LineChart data={revenueByDay} color="var(--c-brand)" labels={dayLabels} />
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
@@ -586,8 +585,8 @@ export default function AdminPanel() {
                             <td style={{ padding: "16px 24px", textAlign: "right" }}>
                               {m.status === "pending" && (
                                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                  <button onClick={() => handleAction("users", m.id, "merchantStatus", "approved", "Mitra disetujui")} style={{ background: "rgba(16,185,129,0.1)", color: "#059669", border: "none", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: 600, cursor: "pointer" }}>Terima</button>
-                                  <button onClick={() => handleAction("users", m.id, "merchantStatus", "rejected", "Mitra ditolak")} style={{ background: "rgba(239,68,68,0.1)", color: "#DC2626", border: "none", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
+                                  <button onClick={() => handleAction("users", m.id, "merchantStatus", "approved", "Mitra disetujui")} style={{ background: "var(--c-ink)", color: "var(--c-surface)", border: "none", padding: "6px 12px", borderRadius: "6px", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>Terima</button>
+                                  <button onClick={() => handleAction("users", m.id, "merchantStatus", "rejected", "Mitra ditolak")} style={{ background: "transparent", color: "var(--c-muted)", border: "1px solid var(--c-faint)", padding: "5px 12px", borderRadius: "6px", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>Tolak</button>
                                 </div>
                               )}
                             </td>
@@ -627,7 +626,7 @@ export default function AdminPanel() {
                       </thead>
                       <tbody>
                         {filteredCouriers.length === 0 ? (
-                          <tr><td colSpan={5} style={{ padding: 32, textAlign: "center", color: "var(--c-muted)" }}>Tidak ada data kurir ditemukan.</td></tr>
+                           <tr><td colSpan={5} style={{ padding: 32, textAlign: "center", color: "var(--c-muted)" }}>Tidak ada data kurir ditemukan.</td></tr>
                         ) : filteredCouriers.map(c => (
                           <tr key={c.id} style={{ borderBottom: "1px solid var(--c-border)" }}>
                             <td style={{ padding: "16px 24px" }}>
@@ -640,8 +639,8 @@ export default function AdminPanel() {
                             <td style={{ padding: "16px 24px", textAlign: "right" }}>
                               {c.status === "pending" && (
                                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                  <button onClick={() => handleAction("users", c.id, "courierStatus", "approved", "Kurir disetujui")} style={{ background: "rgba(16,185,129,0.1)", color: "#059669", border: "none", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: 600, cursor: "pointer" }}>Terima</button>
-                                  <button onClick={() => handleAction("users", c.id, "courierStatus", "rejected", "Kurir ditolak")} style={{ background: "rgba(239,68,68,0.1)", color: "#DC2626", border: "none", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
+                                  <button onClick={() => handleAction("users", c.id, "courierStatus", "approved", "Kurir disetujui")} style={{ background: "var(--c-ink)", color: "var(--c-surface)", border: "none", padding: "6px 12px", borderRadius: "6px", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>Terima</button>
+                                  <button onClick={() => handleAction("users", c.id, "courierStatus", "rejected", "Kurir ditolak")} style={{ background: "transparent", color: "var(--c-muted)", border: "1px solid var(--c-faint)", padding: "5px 12px", borderRadius: "6px", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>Tolak</button>
                                 </div>
                               )}
                             </td>
